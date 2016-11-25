@@ -5,6 +5,8 @@ var EnjoyHint = function (_options) {
 
     var defaults = {
 
+        maxElementSearchAttempt :20,
+
         onStart: function () {
 
         },
@@ -21,6 +23,8 @@ var EnjoyHint = function (_options) {
 
         }
     };
+
+    
 
     var options = $.extend(defaults, _options);
     var data = [];
@@ -135,7 +139,19 @@ var EnjoyHint = function (_options) {
 
             $(document.body).scrollTo(step_data.selector, step_data.scrollAnimationSpeed || 250, {offset: -100});
 
-            setTimeout(function () {
+            var waitForElementFn = function (callbackFn,timeOut, maxAttempts) {
+                if (maxAttempts)
+                    setTimeout(function () {                       
+                        var $element = $(step_data.selector);
+                        if (!$element.length) waitForElementFn(callbackFn,timeOut,maxAttempts-1);
+                        else {
+                            callbackFn();
+                        }
+                    }, timeOut);
+            }
+
+            //wait until expected element appears asynchronously
+            waitForElementFn( function () {
 
                 var $element = $(step_data.selector);
                 var event = makeEventName(step_data.event);
@@ -242,7 +258,10 @@ var EnjoyHint = function (_options) {
                             return;
                         }
 
-                        current_step++;
+                        if (this  === $(step_data.selector)[0]) {
+                                    current_step++;
+                        }
+
                         $(this).off(event);
 
                         stepAction(); // clicked
@@ -286,7 +305,7 @@ var EnjoyHint = function (_options) {
                 }
 
                 $body.enjoyhint('render_label_with_shape', shape_data, that.stop);
-            }, step_data.scrollAnimationSpeed + 20 || 270);
+            }, step_data.scrollAnimationSpeed + 20 || 270, options.maxElementSearchAttempt);
         }, timeout);
     };
 
