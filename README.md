@@ -2,7 +2,7 @@ EnjoyHint
 =========
 **EnjoyHint** is a web-tool that provides the simplest way to create interactive tutorials and hints for your site or web-application. It can also be used to highlight and sign application elements.
 
-I have added algorithm to asynchronously wait for element on each step execution. Also fixed an issue with events triggering multiple times and causing instability in processing steps. 
+I have added algorithm to asynchronously wait for element on each step execution. Added option to hide Arrow for the step if required.   
 
 EnjoyHint is free software distributed under the terms of MIT license.
   
@@ -103,8 +103,8 @@ var enjoyhint_script_steps = [
 ```javascript
 //Example of using custom event_type
 $.get('/load/some_data', function(data){
-  //trigger method has only one argument: event_name.(equal to the value of event property in step config)
-  enjoyhint_instance.trigger('custom_event_name');
+  //trigger method has only one argument: event_name.(equal to the value of event property in step config + 'custom.enjoy_hint')
+  $('body').trigger('custom_event_namecustom.enjoy_hint');
 });
 ```  
 * `next` - when you set value of event_type to "next", you will see the "Next" btn on this step.
