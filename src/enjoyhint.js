@@ -16,6 +16,7 @@ var EnjoyHint = function (_options) {
     var options = $.extend(defaults, _options);
     var data = [];
     var current_step = 0;
+    var timerHandler = null;
     $body = $('body');
 
     /********************* PRIVATE METHODS ***************************************/
@@ -39,6 +40,7 @@ var EnjoyHint = function (_options) {
         e.preventDefault();
     };
     var destroyEnjoy = function () {
+        stopElementMonitoring();
         $('.enjoyhint').remove();
         $body.css({'overflow':'auto'});
         $(document).off("touchmove", lockTouch);
@@ -51,8 +53,48 @@ var EnjoyHint = function (_options) {
         $skipBtn.removeClass(that.skipUserClass);
         $skipBtn.text("Skip");
     };
+    var getShapeDatafromStepData = function (step_data) {
+        var $element = $(step_data.selector);
+        if (!$element.length) return null;
+        var max_habarites = Math.max($element.outerWidth(), $element.outerHeight());
+        var radius = step_data.radius || Math.round(max_habarites / 2) + 5;
+        var offset = $element.offset();
+        var w = $element.outerWidth();
+        var h = $element.outerHeight();
+        var shape_margin = (step_data.margin !== undefined) ? step_data.margin : 10;
+        var coords = {
+            x: offset.left + Math.round(w / 2),
+            y: offset.top + Math.round(h / 2) - $(document).scrollTop()
+        };
+        var shape_data = {
+            enjoyHintElementSelector: step_data.selector,
+            center_x: coords.x,
+            center_y: coords.y,
+            text: step_data.description,
+            top: step_data.top,
+            bottom: step_data.bottom,
+            left: step_data.left,
+            right: step_data.right,
+            margin: step_data.margin,
+            scroll: step_data.scroll,
+        };
+        if (step_data.skipArrow)
+            shape_data.skipArrow = step_data.skipArrow;
+        if (step_data.disableUI)
+            shape_data.disableUI = step_data.disableUI;
+        if (step_data.shape && step_data.shape == 'circle') {
+            shape_data.shape = 'circle';
+            shape_data.radius = radius;
+        } else {
+            shape_data.radius = 0;
+            shape_data.width = w + shape_margin;
+            shape_data.height = h + shape_margin;
+        }
+        return shape_data;
+    }
     var stepAction = function () {
         if (!(data && data[current_step])) {
+            $body.removeClass('enjoyhint-disabled-ui');
             $body.enjoyhint('hide');
             options.onEnd();
             destroyEnjoy();
@@ -96,7 +138,7 @@ var EnjoyHint = function (_options) {
                     }, timeOut);
             }
             //wait until expected element appears asynchronously
-            waitForElementFn( function () {
+            var action = function () {
                 var $element = $(step_data.selector);
                 var event = makeEventName(step_data.event);
                 $body.enjoyhint('show');
@@ -146,7 +188,6 @@ var EnjoyHint = function (_options) {
                             current_step++;
                             stepAction();
                             return;
-                            break;
                         case 'custom':
                             on(step_data.event, function () {
                                 current_step++;
@@ -159,50 +200,30 @@ var EnjoyHint = function (_options) {
                             break;
                     }
                 } else {
+    
                     $event_element.on(event, function (e) {
                         if (step_data.keyCode && e.keyCode != step_data.keyCode) {
                             return;
                         }
                         if (this  === $(step_data.selector)[0]) {
-                                    current_step++;
+                            current_step++;
                         }
+                        
                         $(this).off(event);
                         stepAction(); // clicked
                     });
+                    
+                    
                 }
-                var max_habarites = Math.max($element.outerWidth(), $element.outerHeight());
-                var radius = step_data.radius || Math.round(max_habarites / 2) + 5;
-                var offset = $element.offset();
-                var w = $element.outerWidth();
-                var h = $element.outerHeight();
-                var shape_margin = (step_data.margin !== undefined) ? step_data.margin : 10;
-                var coords = {
-                    x: offset.left + Math.round(w / 2),
-                    y: offset.top + Math.round(h / 2) - $(document).scrollTop()
-                };
-                var shape_data = {
-                    enjoyHintElementSelector: step_data.selector,
-                    center_x: coords.x,
-                    center_y: coords.y,
-                    text: step_data.description,
-                    top: step_data.top,
-                    bottom: step_data.bottom,
-                    left: step_data.left,
-                    right: step_data.right,
-                    margin: step_data.margin,
-                    scroll: step_data.scroll,
-                    skipArrow: step_data.skipArrow  
-                };
-                if (step_data.shape && step_data.shape == 'circle') {
-                    shape_data.shape = 'circle';
-                    shape_data.radius = radius;
-                } else {
-                    shape_data.radius = 0;
-                    shape_data.width = w + shape_margin;
-                    shape_data.height = h + shape_margin;
-                }
+                var shape_data = getShapeDatafromStepData(step_data);
+                that.last_shape_data = shape_data;                
                 $body.enjoyhint('render_label_with_shape', shape_data, that.stop);
-            }, step_data.scrollAnimationSpeed + 20 || 270, options.maxElementSearchAttempt);
+            }
+            if (current_step+1 < data.length && data[current_step+1].event === 'next') {
+                action();
+            } else {
+                waitForElementFn(action, step_data.scrollAnimationSpeed + 20 || 270, options.maxElementSearchAttempt);
+            }
         }, timeout);
     };
     var nextStep = function() {
@@ -239,7 +260,31 @@ var EnjoyHint = function (_options) {
         current_step = cs;
         stepAction();
     };
+    function monitorElementAnimations() {
+        var step_data = data[current_step];
+        if (step_data) {
+            var shape_data = getShapeDatafromStepData(step_data);
+            if (shape_data && that.last_shape_data && (shape_data.center_x != that.last_shape_data.center_x || shape_data.center_y != that.last_shape_data.center_y)) {
+                that.last_shape_data = shape_data;
+                var $element = $(step_data.selector);
+                if ($element) {
+                    if ($event_element != null) {
+                        $body.enjoyhint('render_label_with_shape', shape_data, that.stop);
+                        //$body.enjoyhint('redo_events_near_rect', $event_element[0].getBoundingClientRect());
+                    }
+                }
+            }
+        }
+    }
+    function stopElementMonitoring() {
+        window.clearInterval(timerHandler);
+        timerHandler = null;
+    }
     that.runScript = function () {
+        if (timerHandler) {
+            stopElementMonitoring();
+        }
+        timerHandler = window.setInterval(monitorElementAnimations, 1000);
         current_step = 0;
         options.onStart();
         stepAction();

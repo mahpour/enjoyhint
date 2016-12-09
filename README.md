@@ -2,7 +2,13 @@ EnjoyHint
 =========
 **EnjoyHint** is a web-tool that provides the simplest way to create interactive tutorials and hints for your site or web-application. It can also be used to highlight and sign application elements.
 
-I have added algorithm to asynchronously wait for element on each step execution. Added option to hide Arrow for the step if required.   
+I have added algorithm to asynchronously wait for element on each step execution. 
+
+#### New Features:
+- Added step option `skipArrow: boolean` to hide Arrow for the step if required.
+- Added element position tracking to follow elements if they have animations or transitions that takes longer time without needing to use timeout step attribute.
+- Added steo option `disableUI: boolean` to block clicks on UI for the large highlighted areas to prevent user interferance.
+- Tested with an asynchronous Angular app using the [enjoyhint-angular](https://github.com/mahpour/enjoyhint-angular) directive that supports angular's `event: "ngClick"` event along with `event_type: "custom"` in the step config section    
 
 EnjoyHint is free software distributed under the terms of MIT license.
   
