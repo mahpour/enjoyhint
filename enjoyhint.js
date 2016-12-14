@@ -1027,7 +1027,29 @@ var EnjoyHint = function (_options) {
                             'top': data.y + 'px',
                             'left': data.x + 'px'
                         })
-                        .html(data.text).appendTo(that.enjoyhint);
+                        .html(data.text).on("mousedown",
+                            function(e) {
+                                var startX = e.pageX;
+                                var startY = e.pageY;
+                                var elem = e.target;
+                                this.classList.add('drag');
+                                $("body").on("mousemove.enjoyhint",
+                                    function(ee) {
+                                        var y = event.pageY - startY;
+                                        var x = event.pageX - startX;
+                                        $(elem).css("transform", "translate3d(" + x + "px," + y + "px,0px)");
+                                    }).on("mouseup.enjoyhint", function () {
+                                        var y = event.pageY - startY;
+                                        var x = event.pageX - startX;
+                                        $(elem).css("transform", "translate3d(0px,0px,0px)");
+                                        $(elem).css("left", ($(elem).position().left + x) + "px");
+                                        $(elem).css("top", ($(elem).position().top + y) + "px");
+                                        $(elem).removeClass("drag");
+                                        $("body").off("mousemove.enjoyhint");
+                                        $("body").off("mouseup.enjoyhint");
+                                });
+                            }
+                        ).appendTo(that.enjoyhint);
                 };
 
                 that.disableEventsNearRect = function (rect) {
