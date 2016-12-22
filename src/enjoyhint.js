@@ -93,6 +93,7 @@ var EnjoyHint = function (_options) {
         return shape_data;
     }
     var stepAction = function () {
+        $body.enjoyhint('setProgress',current_step+1,data.length);
         if (!(data && data[current_step])) {
             $body.removeClass('enjoyhint-disabled-ui');
             $body.enjoyhint('hide');
@@ -188,6 +189,7 @@ var EnjoyHint = function (_options) {
                             current_step++;
                             stepAction();
                             return;
+                            break;
                         case 'custom':
                             on(step_data.event, function () {
                                 current_step++;

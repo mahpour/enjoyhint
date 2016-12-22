@@ -320,3 +320,20 @@ div.kineticjs-content{
 .enjoy_hint_label.drag{
     box-shadow:5px 5px  15px rgba(0,0,0,0.3);
 }
+
+.enjoyhint_progress{
+    position:fixed;
+    right:15px;
+    left:auto;
+    top:auto;
+    bottom:20px;
+    color:white;
+    font-size:2.0em;
+    font-weight:300;
+    background-color:rgba(0,0,0,0.5);
+    padding:10px;
+    border-radius:15px;
+    display:block;
+    width:3em;
+    height:3em;
+}

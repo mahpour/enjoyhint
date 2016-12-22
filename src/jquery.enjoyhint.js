@@ -38,7 +38,9 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
                     },
 
-                    animation_time: 800
+                    animation_time: 800,
+
+                    showProgressPanel:true
                 };
 
                 this.enjoyhint_obj = {};
@@ -84,7 +86,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     main_svg: 'enjoyhint_svg',
                     svg_wrapper: 'enjoyhint_svg_wrapper',
                     svg_transparent: 'enjoyhint_svg_transparent',
-                    kinetic_container: 'kinetic_container'
+                    kinetic_container: 'kinetic_container',
+                    progress_panel: 'enjoyhint_progress'
                 };
 
                 function makeSVG(tag, attrs) {
@@ -170,6 +173,10 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     that.hide();
                     that.options.onSkipClick();
                 });
+                if (that.options.showProgressPanel) {
+                    var totalSteps = "1";
+                    that.$progress_panel = $('<div>', { 'class': that.cl.progress_panel }).appendTo(that.enjoyhint) .html('1/' + totalSteps);
+                }
 
                 that.$canvas.mousedown(function (e) {
 
@@ -261,13 +268,15 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
                             originalArrowLeft = [];
                             var attr = $('#enjoyhint_arrpw_line').attr('d');
-                            originalArrowLeft.push(attr.substr(1).split(',')[0]);
-                            originalArrowLeft.push(attr.substr(attr.indexOf('Q') + 1).split(',')[0]);
-                            originalArrowLeft.push(attr.split(' ')[2].split(',')[0]);
-                            originalArrowTop = [];
-                            originalArrowTop.push(attr.split(',')[1].split(' ')[0]);
-                            originalArrowTop.push(attr.split(',')[2].split(' ')[0]);
-                            originalArrowTop.push(attr.split(',')[3]);
+                            if (attr && attr.length) {
+                                originalArrowLeft.push(attr.substr(1).split(',')[0]);
+                                originalArrowLeft.push(attr.substr(attr.indexOf('Q') + 1).split(',')[0]);
+                                originalArrowLeft.push(attr.split(' ')[2].split(',')[0]);
+                                originalArrowTop = [];
+                                originalArrowTop.push(attr.split(',')[1].split(' ')[0]);
+                                originalArrowTop.push(attr.split(',')[2].split(' ')[0]);
+                                originalArrowTop.push(attr.split(',')[3]);
+                            }
                         }
 
                         var labelElement = $('.enjoy_hint_label');
@@ -464,6 +473,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
                     that.$skip_btn.removeClass(that.cl.hide);
                 };
+
+                
 
                 that.renderCircle = function (data) {
 
@@ -691,9 +702,9 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     }, that.options.animation_time / 2);
                 };
 
-                that.getLabelElement = function (data) {
+                that.getLabelElement = function(data) {
 
-                    return $('<div>', {"class": 'enjoy_hint_label', id: 'enjoyhint_label'})
+                    return $('<div>', { "class": 'enjoy_hint_label', id: 'enjoyhint_label',unselectable : "on" })
                         .css({
                             'top': data.y + 'px',
                             'left': data.x + 'px'
@@ -702,16 +713,30 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                             function(e) {
                                 var startX = e.pageX;
                                 var startY = e.pageY;
+                                var initialD = $('#enjoyhint_arrpw_line').attr('d');
+                                function updateD(initialD, dx, dy) {
+                                    var initialCoords = initialD.split(' ');
+                                    var currentX = Number(initialCoords[0].split(',')[0].substr(1));
+                                    var currentY = Number(initialCoords[0].split(',')[1]);
+                                    initialCoords[0] = 'M' + (currentX + dx) + ',' + (currentY + dy);
+                                    return initialCoords.join(' ');
+                                }
                                 var elem = e.target;
                                 this.classList.add('drag');
                                 $("body").on("mousemove.enjoyhint",
                                     function(ee) {
-                                        var y = event.pageY - startY;
-                                        var x = event.pageX - startX;
+                                        var y = ee.pageY - startY;
+                                        var x = ee.pageX - startX;
                                         $(elem).css("transform", "translate3d(" + x + "px," + y + "px,0px)");
-                                    }).on("mouseup.enjoyhint", function () {
-                                        var y = event.pageY - startY;
-                                        var x = event.pageX - startX;
+                                        if (initialD && initialD.length)  $('#enjoyhint_arrpw_line').attr('d', updateD(initialD, x, y));
+                                    }).on("mouseup.enjoyhint", function (ee) {
+                                        var y = ee.pageY - startY;
+                                        var x = ee.pageX - startX;
+                                        if (initialD && initialD.length) {
+                                            initialD = updateD(initialD, x, y);
+                                            $('#enjoyhint_arrpw_line').attr('d', initialD);
+                                            
+                                        }
                                         $(elem).css("transform", "translate3d(0px,0px,0px)");
                                         $(elem).css("left", ($(elem).position().left + x) + "px");
                                         $(elem).css("top", ($(elem).position().top + y) + "px");
@@ -721,7 +746,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                                 });
                             }
                         ).appendTo(that.enjoyhint);
-                };
+                    };
 
                 that.disableEventsNearRect = function (rect) {
                     function disableHandler(e) {
@@ -1077,6 +1102,40 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
                 return this;
             });
+        },
+
+        setProgress : function(current, total) {
+            if (that.$progress_panel) {
+                var getPie = function(val) {
+                    var p = parseFloat(val);
+                    var NS = "http://www.w3.org/2000/svg";
+                    var svg = document.createElementNS(NS, "svg");
+                    var circle1 = document.createElementNS(NS, "circle");
+                    circle1.setAttribute("r", 15);
+                    circle1.setAttribute("cx", 20);
+                    circle1.setAttribute("cy", 20);
+                    circle1.setAttribute("fill", "transparent");
+                    circle1.setAttribute("stroke-linecap", "butt");
+                    circle1.setAttribute("stroke-width", "2pt");
+                    circle1.setAttribute("stroke", "black");
+                    var circle = document.createElementNS(NS, "circle");
+                    circle.setAttribute("r", 15);
+                    circle.setAttribute("cx", 20);
+                    circle.setAttribute("cy", 20);
+                    circle.setAttribute("fill", "transparent");                    
+                    circle.setAttribute("stroke-linecap", "butt");
+                    circle.setAttribute("stroke-width", "2pt");
+                    circle.setAttribute("stroke", "white");
+                    circle.setAttribute("stroke-dasharray", p + " 100");
+
+                    svg.setAttribute("viewBox", "0 0 40 40");
+                    svg.setAttribute("style", "transform: rotate(270deg);");
+                    svg.appendChild(circle1);
+                    svg.appendChild(circle);
+                    return svg;
+                }
+                $(that.$progress_panel).html(getPie((current / total) * 100)); //.text(current + "/" + total);
+            }
         },
 
         set: function (val) {
