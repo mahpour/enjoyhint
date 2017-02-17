@@ -150,7 +150,50 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
                     e.stopImmediatePropagation();
                 };
+                that.$contents_container = $('<div/>', { 'class': that.cl.enjoy_hint + '-container' })
+                    .appendTo(that.enjoyhint).on("mousedown",
+                        function(e) {
+                            var startX = e.pageX;
+                            var startY = e.pageY;
+                            var initialD = $('#enjoyhint_arrpw_line').attr('d');
 
+                            function updateD(initialD, dx, dy) {
+                                var initialCoords = initialD.split(' ');
+                                var currentX = Number(initialCoords[0].split(',')[0].substr(1));
+                                var currentY = Number(initialCoords[0].split(',')[1]);
+                                initialCoords[0] = 'M' + (currentX + dx) + ',' + (currentY + dy);
+                                return initialCoords.join(' ');
+                            }
+
+                            var elem = that.$contents_container;
+                            this.classList.add('drag');
+                            $("body").on("mousemove.enjoyhint",
+                                function(ee) {
+                                    var y = ee.pageY - startY;
+                                    var x = ee.pageX - startX;
+                                    $(elem).css("transform", "translate3d(" + x + "px," + y + "px,0px)");
+                                    if (initialD && initialD.length
+                                    ) $('#enjoyhint_arrpw_line').attr('d', updateD(initialD, x, y));
+                                }).on("mouseup.enjoyhint",
+                                function(ee) {
+                                    var y = ee.pageY - startY;
+                                    var x = ee.pageX - startX;
+                                    if (initialD && initialD.length) {
+                                        initialD = updateD(initialD, x, y);
+                                        $('#enjoyhint_arrpw_line').attr('d', initialD);
+
+                                    }
+                                    $(elem).data('data-x', x).data('data-y', y);
+                                    //$(elem).css("transform", "translate3d(0px,0px,0px)");
+                                    //$(elem).css("left", ($(elem).position().left + x) + "px");
+                                    //$(elem).css("top", ($(elem).position().top + y) + "px");
+                                    $(elem).removeClass("drag");
+                                    $("body").off("mousemove.enjoyhint");
+                                    $("body").off("mouseup.enjoyhint");
+                                });
+                        }
+                    );
+                
                 $("button").focusout(stopPropagation);
                 $top_dis_events.click(stopPropagation);
                 $bottom_dis_events.click(stopPropagation);
@@ -158,17 +201,17 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                 $right_dis_events.click(stopPropagation);
 
 
-                that.$skip_btn = $('<div>', {'class': that.cl.skip_btn}).appendTo(that.enjoyhint).html('Skip').click(function (e) {
+                that.$skip_btn = $('<div>', { 'class': that.cl.skip_btn }).appendTo(that.$contents_container).html('Skip').click(function (e) {
 
                     that.hide();
                     that.options.onSkipClick();
                 });
-                that.$next_btn = $('<div>', {'class': that.cl.next_btn}).appendTo(that.enjoyhint).html('Next').click(function (e) {
+                that.$next_btn = $('<div>', { 'class': that.cl.next_btn }).appendTo(that.$contents_container).html('Next').click(function (e) {
 
                     that.options.onNextClick();
                 });
 
-                that.$close_btn = $('<div>', {'class': that.cl.close_btn}).appendTo(that.enjoyhint).html('').click(function (e) {
+                that.$close_btn = $('<div>', { 'class': that.cl.close_btn }).appendTo(that.$contents_container).html('').click(function (e) {
 
                     that.hide();
                     that.options.onSkipClick();
@@ -255,7 +298,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                         prevWindowWidth = window.innerWidth;
                         prevWindowHeight = window.innerHeight;
 
-
+                            
                         /* Init */
 
                         if (!originalCenterX) {
@@ -281,7 +324,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
                         var labelElement = $('.enjoy_hint_label');
 
-                        if (!originalLabelLeft) {
+                        if (!originalLabelLeft && labelElement && labelElement.length) {
 
                             originalLabelLeft = labelElement[0].getBoundingClientRect().left;
                             originalLabelTop = labelElement[0].getBoundingClientRect().top;
@@ -289,7 +332,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
                         var skipButton = $('.enjoyhint_skip_btn');
 
-                        if (!originalSkipbuttonLeft) {
+                        if (!originalSkipbuttonLeft && skipButton && skipButton.length) {
 
                             originalSkipbuttonLeft = skipButton[0].getBoundingClientRect().left;
                             originalSkipbuttonTop = skipButton[0].getBoundingClientRect().top;
@@ -595,7 +638,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     var label = that.getLabelElement({
                         x: x,
                         y: y,
-                        text: data.text
+                        text: data.text,
+                        progress: data.progress
                     });
 
                     var label_w = label.width();
@@ -632,7 +676,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     setTimeout(function () {
 
                         $('#enjoyhint_label').remove();
-                        label.appendTo(that.enjoyhint);
+                        label.appendTo(that.$contents_container);
                     }, that.options.animation_time / 2);
 
                     return {
@@ -709,48 +753,12 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                             'top': data.y + 'px',
                             'left': data.x + 'px'
                         })
-                        .html(data.text).on("mousedown",
-                            function(e) {
-                                var startX = e.pageX;
-                                var startY = e.pageY;
-                                var initialD = $('#enjoyhint_arrpw_line').attr('d');
-                                function updateD(initialD, dx, dy) {
-                                    var initialCoords = initialD.split(' ');
-                                    var currentX = Number(initialCoords[0].split(',')[0].substr(1));
-                                    var currentY = Number(initialCoords[0].split(',')[1]);
-                                    initialCoords[0] = 'M' + (currentX + dx) + ',' + (currentY + dy);
-                                    return initialCoords.join(' ');
-                                }
-                                var elem = e.target;
-                                this.classList.add('drag');
-                                $("body").on("mousemove.enjoyhint",
-                                    function(ee) {
-                                        var y = ee.pageY - startY;
-                                        var x = ee.pageX - startX;
-                                        $(elem).css("transform", "translate3d(" + x + "px," + y + "px,0px)");
-                                        if (initialD && initialD.length)  $('#enjoyhint_arrpw_line').attr('d', updateD(initialD, x, y));
-                                    }).on("mouseup.enjoyhint", function (ee) {
-                                        var y = ee.pageY - startY;
-                                        var x = ee.pageX - startX;
-                                        if (initialD && initialD.length) {
-                                            initialD = updateD(initialD, x, y);
-                                            $('#enjoyhint_arrpw_line').attr('d', initialD);
-                                            
-                                        }
-                                        $(elem).css("transform", "translate3d(0px,0px,0px)");
-                                        $(elem).css("left", ($(elem).position().left + x) + "px");
-                                        $(elem).css("top", ($(elem).position().top + y) + "px");
-                                        $(elem).removeClass("drag");
-                                        $("body").off("mousemove.enjoyhint");
-                                        $("body").off("mouseup.enjoyhint");
-                                });
-                            }
-                        ).appendTo(that.enjoyhint);
+                        .html(data.text).appendTo(that.$contents_container);
                     };
 
                 that.disableEventsNearRect = function (rect) {
                     function disableHandler(e) {
-                        if ($body.hasClass("enjoyhint-disabled-ui") && !($(e.target).hasClass(that.cl.next_btn) || $(e.target).hasClass(that.cl.close_btn) || $(e.target).hasClass(that.cl.skip_btn))) {
+                        if ($body.hasClass("enjoyhint-disabled-ui") && !($(e.target).hasClass(that.cl.next_btn) || $(e.target).hasClass(that.cl.close_btn) || $(e.target).hasClass(that.cl.skip_btn) || $(e.target).parents('.enjoyhint_index').length)) {
                             e.stopPropagation();
                             e.preventDefault();
                         }
@@ -799,7 +807,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     }
                 })(jQuery);
 
-                that.renderLabelWithShape = function (data) {
+                that.renderLabelWithShape = function (data, progressPercentage) {
 
                     that.stepData = data;
 
@@ -919,7 +927,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     var label = that.getLabelElement({
                         x: 0,
                         y: 0,
-                        text: data.text
+                        text: data.text,
+                        progress:progressPercentage
                     });
 
                     var label_width = label.outerWidth();
@@ -955,7 +964,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     var label_data = that.renderLabel({
                         x: label_x,
                         y: label_y,
-                        text: data.text
+                        text: data.text,
+                        progress: progressPercentage
                     });
 
                     that.$next_btn.css({
@@ -976,8 +986,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     });
 
                     that.$close_btn.css({
-                        right : 10,
-                        top: 10
+                        left: label_x,
+                        top: label_y - 50
                     });
 
                     that.disableEventsNearRect({
@@ -1134,7 +1144,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                     svg.appendChild(circle);
                     return svg;
                 }
-                $(that.$progress_panel).html(getPie((current / total) * 100)); //.text(current + "/" + total);
+                $(that.$progress_panel).html(getPie((current / total) * 100)); //.text(current + "/" + total);                
+                
             }
         },
 
@@ -1228,12 +1239,12 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
             return this;
         },
 
-        render_label_with_shape: function (data, stopFunction) {
+        render_label_with_shape: function (data, stopFunction, progressPercentage) {
 
             this.each(function () {
 
                 that.stopFunction = stopFunction;
-                this.enjoyhint_obj.renderLabelWithShape(data);
+                this.enjoyhint_obj.renderLabelWithShape(data, progressPercentage);
             });
 
             return this;

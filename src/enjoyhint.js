@@ -1,53 +1,87 @@
+window.enjoyhintcounter = 0;
 var EnjoyHint = function (_options) {
+
     var $event_element;
     var that = this;
+    that.id = ++window.enjoyhintcounter;
     var defaults = {
-        maxElementSearchAttempt :20,
+
+        maxElementSearchAttempt :4,
+
         onStart: function () {
+
         },
+
         onEnd: function () {
+
         },
+
         onSkip: function () {
+
         },
+
         onNext: function () {
+
         }
     };
+
     
-    var options = $.extend(defaults, _options);
-    var data = [];
-    var current_step = 0;
-    var timerHandler = null;
+
+    this.options = $.extend(defaults, _options);
+    this.data = [];
+    this.current_step = 0;
+    this.timerHandler = null;
+
     $body = $('body');
 
+
     /********************* PRIVATE METHODS ***************************************/
+
     var init = function () {
+
         if ($('.enjoyhint')) {
+
             $('.enjoyhint').remove();
         }
+
         $body.css({'overflow':'hidden'});
+
         $(document).on("touchmove",lockTouch);
+
         $body.enjoyhint({
+
             onNextClick: function () {
-                nextStep();
+
+                that.nextStep();
             },
+
             onSkipClick: function () {
-                options.onSkip();
-                skipAll();
+
+                that.options.onSkip();
+                that.skipAll();
             }
         });
     };
+
     var lockTouch = function(e) {
+
         e.preventDefault();
     };
-    var destroyEnjoy = function () {
-        stopElementMonitoring();
+
+    that.destroyEnjoy = function () {
+        $body.removeClass('enjoyhint-disabled-ui');
+        that.stopElementMonitoring();
         $('.enjoyhint').remove();
         $body.css({'overflow':'auto'});
         $(document).off("touchmove", lockTouch);
+        $(document).off(".enjoyhint");
     };
+
     that.clear = function(){
+
         var $nextBtn = $('.enjoyhint_next_btn');
         var $skipBtn = $('.enjoyhint_skip_btn');
+
         $nextBtn.removeClass(that.nextUserClass);
         $nextBtn.text("Next");
         $skipBtn.removeClass(that.skipUserClass);
@@ -62,10 +96,12 @@ var EnjoyHint = function (_options) {
         var w = $element.outerWidth();
         var h = $element.outerHeight();
         var shape_margin = (step_data.margin !== undefined) ? step_data.margin : 10;
+
         var coords = {
             x: offset.left + Math.round(w / 2),
             y: offset.top + Math.round(h / 2) - $(document).scrollTop()
         };
+
         var shape_data = {
             enjoyHintElementSelector: step_data.selector,
             center_x: coords.x,
@@ -77,193 +113,308 @@ var EnjoyHint = function (_options) {
             right: step_data.right,
             margin: step_data.margin,
             scroll: step_data.scroll,
+
         };
         if (step_data.skipArrow)
             shape_data.skipArrow = step_data.skipArrow;
+
         if (step_data.disableUI)
             shape_data.disableUI = step_data.disableUI;
+
         if (step_data.shape && step_data.shape == 'circle') {
+
             shape_data.shape = 'circle';
             shape_data.radius = radius;
         } else {
+
             shape_data.radius = 0;
             shape_data.width = w + shape_margin;
             shape_data.height = h + shape_margin;
         }
         return shape_data;
     }
-    var stepAction = function () {
-        $body.enjoyhint('setProgress',current_step+1,data.length);
-        if (!(data && data[current_step])) {
+
+    that.stepAction = function () {
+        
+        console.log('step_index:', that.id+": "+that.current_step);
+        $body.enjoyhint('setProgress', that.current_step + 1, that.data.length);
+        if (!(that.data && that.data[that.current_step])) {
             $body.removeClass('enjoyhint-disabled-ui');
             $body.enjoyhint('hide');
-            options.onEnd();
-            destroyEnjoy();
+            that.options.onEnd();
+            that.destroyEnjoy();
             return;
         }
-        options.onNext();
+
+        that.options.onNext();
+
         var $enjoyhint = $('.enjoyhint');
-        $enjoyhint.removeClass("enjoyhint-step-" + current_step);
-        $enjoyhint.removeClass("enjoyhint-step-" + (current_step + 1));
-        $enjoyhint.addClass("enjoyhint-step-" + (current_step + 1));
-        var step_data = data[current_step];
+
+        $enjoyhint.removeClass("enjoyhint-step-" + that.current_step);
+        $enjoyhint.removeClass("enjoyhint-step-" + (that.current_step + 1));
+        $enjoyhint.addClass("enjoyhint-step-" + (that.current_step + 1));
+
+        var step_data = that.data[that.current_step];
+
         if (step_data.onBeforeStart && typeof step_data.onBeforeStart === 'function') {
+
             step_data.onBeforeStart();
         }
+
         var timeout = step_data.timeout || 0;
         setTimeout(function () {
+
+            that.clear();
+        }, 250);
+
+        setTimeout(function () {
+
             if (!step_data.selector) {
+
                 for (var prop in step_data) {
+
                     if (step_data.hasOwnProperty(prop) && prop.split(" ")[1]) {
+
                         step_data.selector = prop.split(" ")[1];
                         step_data.event = prop.split(" ")[0];
+
                         if (prop.split(" ")[0] == 'next' || prop.split(" ")[0] == 'auto' || prop.split(" ")[0] == 'custom') {
+
                             step_data.event_type = prop.split(" ")[0];
                         }
+
                         step_data.description = step_data[prop];
                     }
                 }
             }
-            setTimeout(function () {
-                that.clear();
-            }, 250);
+
+            
+
             $(document.body).scrollTo(step_data.selector, step_data.scrollAnimationSpeed || 250, {offset: -100});
+
             var waitForElementFn = function (callbackFn,timeOut, maxAttempts) {
-                if (maxAttempts)
-                    setTimeout(function () {                       
+                    if (that.elementSearchTimer != null) {
+                        clearInterval(window.elementSearchTimer);
+                        that.elementSearchTimer = null;
+                    }
+                    that.elementSearchTimer = setInterval(function () {
                         var $element = $(step_data.selector);
-                        if (!$element.length) waitForElementFn(callbackFn,timeOut,maxAttempts-1);
+                        maxAttempts--;
+                        if (!maxAttempts) {
+                            clearInterval(that.elementSearchTimer);
+                            that.elementSearchTimer = null;
+                            if (console && console.log) {
+                                console.log("element not found: " + step_data.selector);
+                            }
+                        }
+                        if (!$element.length || !$element.is(":visible")) {
+                            if (console && console.log) {
+                                console.log("searching for element: " + step_data.selector);
+                            }
+                            //waitForElementFn(callbackFn, timeOut, maxAttempts - 1);                            
+                        }
                         else {
+                            clearInterval(that.elementSearchTimer);
+                            that.elementSearchTimer = null;
                             callbackFn();
                         }
                     }, timeOut);
             }
+
             //wait until expected element appears asynchronously
             var action = function () {
+                //var current_step = that.current_step;
+                //var data = that.data;
                 var $element = $(step_data.selector);
                 var event = makeEventName(step_data.event);
+
                 $body.enjoyhint('show');
                 $body.enjoyhint('hide_next');
                 $event_element = $element;
+
                 if (step_data.event_selector) {
+
                     $event_element = $(step_data.event_selector);
                 }
+
                 if (!step_data.event_type && step_data.event == "key") {
+
                     $element.keydown(function (event) {
+
                         if (event.which == step_data.keyCode) {
+
                             current_step++;
                             stepAction();
                         }
                     });
                 }
+
                 if (step_data.showNext == true) {
+
                     $body.enjoyhint('show_next');
                 }
+
                 if (step_data.showSkip == false) {
+
                     $body.enjoyhint('hide_skip');
                 } else {
+
                     $body.enjoyhint('show_skip');
                 }
+
                 if (step_data.showSkip == true) {
+
                 }
+
                 if (step_data.nextButton) {
+
                     var $nextBtn = $('.enjoyhint_next_btn');
+
                     $nextBtn.addClass(step_data.nextButton.className || "");
                     $nextBtn.text(step_data.nextButton.text || "Next");
                     that.nextUserClass = step_data.nextButton.className;
                 }
+
                 if (step_data.skipButton) {
+
                     var $skipBtn = $('.enjoyhint_skip_btn');
+
                     $skipBtn.addClass(step_data.skipButton.className || "");
                     $skipBtn.text(step_data.skipButton.text || "Skip");
                     that.skipUserClass = step_data.skipButton.className;
                 }
+
                 if (step_data.event_type) {
+
                     switch (step_data.event_type) {
+
                         case 'auto':
+
                             $element[step_data.event]();
+
                             switch (step_data.event) {
+
                                 case 'click':
                                     break;
                             }
-                            current_step++;
-                            stepAction();
+
+                            that.current_step++;
+                            that.stepAction();
+
                             return;
                             break;
+
                         case 'custom':
+                            
                             on(step_data.event, function () {
-                                current_step++;
+
+                                that.current_step++;
+                                console.log('step trigger:', that.current_step);
                                 off(step_data.event);
-                                stepAction();
+                                that.stepAction();
                             });
+
                             break;
+
                         case 'next':
+
                             $body.enjoyhint('show_next');
                             break;
                     }
+
                 } else {
     
                     $event_element.on(event, function (e) {
+
                         if (step_data.keyCode && e.keyCode != step_data.keyCode) {
+
                             return;
                         }
+
                         if (this  === $(step_data.selector)[0]) {
-                            current_step++;
+                            that.current_step++;
                         }
                         
                         $(this).off(event);
+
                         stepAction(); // clicked
                     });
                     
                     
+
                 }
+
                 var shape_data = getShapeDatafromStepData(step_data);
                 that.last_shape_data = shape_data;                
-                $body.enjoyhint('render_label_with_shape', shape_data, that.stop);
+                var progressPercentage = Math.round(((that.current_step + 1) / that.data.length) * 100) + "%";
+                $body.enjoyhint('render_label_with_shape', shape_data, that.stop, progressPercentage);
             }
-            if (current_step+1 < data.length && data[current_step+1].event === 'next') {
+            if (that.current_step + 1 < that.data.length && that.data[that.current_step + 1].event === 'next') {
                 action();
             } else {
-                waitForElementFn(action, step_data.scrollAnimationSpeed + 20 || 270, options.maxElementSearchAttempt);
+                waitForElementFn(action, step_data.scrollAnimationSpeed + 20 || 270, that.options.maxElementSearchAttempt);
             }
         }, timeout);
     };
-    var nextStep = function() {
-        current_step++;
-        stepAction();
+
+    that.nextStep = function() {
+
+        that.current_step++;
+        that.stepAction();
     };
-    var skipAll = function() {
-        var step_data = data[current_step];
+
+    that.skipAll = function() {
+
+        var step_data = that.data[that.current_step];
         var $element = $(step_data.selector);
+
         off(step_data.event);
         $element.off(makeEventName(step_data.event));
-        destroyEnjoy();
+
+        that.destroyEnjoy();
     };
+
     var makeEventName = function (name, is_custom) {
+
         return name + (is_custom ? 'custom' : '') + '.enjoy_hint';
     };
+
     var on = function (event_name, callback) {
+
         $body.on(makeEventName(event_name, true), callback);
     };
+
     var off = function (event_name) {
+
         $body.off(makeEventName(event_name, true));
     };
 
+
     /********************* PUBLIC METHODS ***************************************/
+
     window.addEventListener('resize', function() {
-        if ($event_element != null) {
+
+        if ($event_element != null && $event_element.length) {
+
             $body.enjoyhint('redo_events_near_rect', $event_element[0].getBoundingClientRect());
         }
     });
+
     that.stop = function() {
-        skipAll();
+
+        that.skipAll();
     };
+
     that.reRunScript = function(cs) {
-        current_step = cs;
-        stepAction();
+
+        that.current_step = cs;
+        that.stepAction();
     };
-    function monitorElementAnimations() {
-        var step_data = data[current_step];
+
+    that.monitorElementAnimations=function() {
+        var that = this;
+        var current_step = that.current_step;
+        var step_data = that.data[current_step];
         if (step_data) {
             var shape_data = getShapeDatafromStepData(step_data);
             if (shape_data && that.last_shape_data && (shape_data.center_x != that.last_shape_data.center_x || shape_data.center_y != that.last_shape_data.center_y)) {
@@ -271,62 +422,89 @@ var EnjoyHint = function (_options) {
                 var $element = $(step_data.selector);
                 if ($element) {
                     if ($event_element != null) {
-                        $body.enjoyhint('render_label_with_shape', shape_data, that.stop);
+                        var progressPercentage = Math.round(((current_step + 1)/ that.data.length) * 100) + "%";
+                        $body.enjoyhint('render_label_with_shape', shape_data, that.stop,progressPercentage);
                         //$body.enjoyhint('redo_events_near_rect', $event_element[0].getBoundingClientRect());
                     }
                 }
             }
         }
     }
-    function stopElementMonitoring() {
-        window.clearInterval(timerHandler);
-        timerHandler = null;
+    that.stopElementMonitoring=function() {
+        window.clearInterval(that.timerHandler);
+        that.timerHandler = null;
     }
+    that.init = init;
     that.runScript = function () {
-        if (timerHandler) {
+        if (that.timerHandler) {
             stopElementMonitoring();
         }
-        timerHandler = window.setInterval(monitorElementAnimations, 1000);
-        current_step = 0;
-        options.onStart();
-        stepAction();
+        //setupCssAnimationObserver()
+        that.timerHandler = window.setInterval(that.monitorElementAnimations.bind(that), 1000);
+        that.current_step = 0;
+        that.options.onStart.apply(that);
+        that.stepAction();
     };
+
     that.resumeScript = function () {
+
         stepAction();
     };
+
     that.setCurrentStep = function(cs) {
-        current_step = cs;
+
+        that.current_step = cs;
     };
+
     that.getCurrentStep = function () {
-        return current_step;
+
+        return that.current_step;
     };
+
     that.trigger = function (event_name) {
+
         switch (event_name) {
+
             case 'next':
-                nextStep();
+
+                that.nextStep();
                 break;
+
             case 'skip':
-                skipAll();
+
+                that.skipAll();
                 break;
         }
     };
+
     that.setScript = function (_data) {
+
         if (_data) {
-            data = _data;
+
+            that.data = _data;
         }
     };
+
     //support deprecated API methods
     that.set = function (_data) {
+
         that.setScript(_data);
     };
+
     that.setSteps = function (_data) {
+
         that.setScript(_data);
     };
+
     that.run = function () {
+
         that.runScript();
     };
+
     that.resume = function () {
+
         that.resumeScript();
     };
+
     init();
 }
