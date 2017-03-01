@@ -266,7 +266,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                 that.layer.add(that.shape);
                 that.kinetic_stage.add(that.layer);
 
-                $(window).on('resize', function() {
+                $(window).on('resize.enjoyhint', function() {
 
                     if (!($(that.stepData.enjoyHintElementSelector).is(":visible"))) {
 
@@ -274,7 +274,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                         $(window).off('resize');
                         return;
                     }
-
+                    if (!$('.enjoyhint:visible').length) return;
                     prevWindowWidth = window.innerWidth;
                     prevWindowHeight = window.innerHeight;
 
@@ -763,13 +763,13 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
                             e.preventDefault();
                         }
                     }
-                    if (this.stepData.disableUI) {
+                    /*if (this.stepData.disableUI) {
                         $body.addClass('enjoyhint-disabled-ui');
                         document.addEventListener("click", disableHandler, true);
                     } else {
                         document.removeEventListener("click", disableHandler);
                         $body.removeClass('enjoyhint-disabled-ui', disableHandler)
-                    } 
+                    } */
                     
 
                     $top_dis_events.css({

@@ -6,7 +6,7 @@ var EnjoyHint = function (_options) {
     that.id = ++window.enjoyhintcounter;
     var defaults = {
 
-        maxElementSearchAttempt :4,
+        maxElementSearchAttempt :200,
 
         onStart: function () {
 
@@ -72,7 +72,8 @@ var EnjoyHint = function (_options) {
         $body.removeClass('enjoyhint-disabled-ui');
         that.stopElementMonitoring();
         $('.enjoyhint').remove();
-        $body.css({'overflow':'auto'});
+        $body.css({ 'overflow': 'auto' });
+        //window.removeEventListener('resize.enjoyhint');
         $(document).off("touchmove", lockTouch);
         $(document).off(".enjoyhint");
     };
@@ -90,11 +91,11 @@ var EnjoyHint = function (_options) {
     var getShapeDatafromStepData = function (step_data) {
         var $element = $(step_data.selector);
         if (!$element.length) return null;
-        var max_habarites = Math.max($element.outerWidth(), $element.outerHeight());
+        var max_habarites = Math.max($element.outerWidth() || Number($element.attr('width')), $element.outerHeight() || Number($element.attr('height')));
         var radius = step_data.radius || Math.round(max_habarites / 2) + 5;
         var offset = $element.offset();
-        var w = $element.outerWidth();
-        var h = $element.outerHeight();
+        var w = $element.outerWidth() || Number($element.attr('width'));
+        var h = $element.outerHeight() || Number($element.attr('height'));
         var shape_margin = (step_data.margin !== undefined) ? step_data.margin : 10;
 
         var coords = {
@@ -134,6 +135,18 @@ var EnjoyHint = function (_options) {
         return shape_data;
     }
 
+    var makeEventName = function (name, is_custom) {
+
+        return name + (is_custom ? 'custom' : '') + '.enjoy_hint';
+    };
+    var on = function(event_name, callback) {
+        $body.on(makeEventName(event_name, true), callback);
+    };
+
+    var off = function (event_name) {
+        $body.off(makeEventName(event_name, true));
+    };
+    
     that.stepAction = function () {
         
         console.log('step_index:', that.id+": "+that.current_step);
@@ -192,20 +205,21 @@ var EnjoyHint = function (_options) {
 
             $(document.body).scrollTo(step_data.selector, step_data.scrollAnimationSpeed || 250, {offset: -100});
 
-            var waitForElementFn = function (callbackFn,timeOut, maxAttempts) {
+            var waitForElementFn = function (callbackFn, timeOut, maxAttempts) {
                     if (that.elementSearchTimer != null) {
-                        clearInterval(window.elementSearchTimer);
+                        clearInterval(that.elementSearchTimer);
                         that.elementSearchTimer = null;
                     }
                     that.elementSearchTimer = setInterval(function () {
+                        var step_data = that.data[that.current_step];
                         var $element = $(step_data.selector);
                         maxAttempts--;
-                        if (!maxAttempts) {
+                        if (maxAttempts<=0 && !$element.length) {
                             clearInterval(that.elementSearchTimer);
-                            that.elementSearchTimer = null;
                             if (console && console.log) {
                                 console.log("element not found: " + step_data.selector);
                             }
+                            return;
                         }
                         if (!$element.length || !$element.is(":visible")) {
                             if (console && console.log) {
@@ -214,8 +228,10 @@ var EnjoyHint = function (_options) {
                             //waitForElementFn(callbackFn, timeOut, maxAttempts - 1);                            
                         }
                         else {
+                            if ($element && $element.length && $element[0].scrollIntoView) {
+                                $element[0].scrollIntoView();
+                            }
                             clearInterval(that.elementSearchTimer);
-                            that.elementSearchTimer = null;
                             callbackFn();
                         }
                     }, timeOut);
@@ -223,9 +239,10 @@ var EnjoyHint = function (_options) {
 
             //wait until expected element appears asynchronously
             var action = function () {
+                var step_data = that.data[that.current_step];
                 //var current_step = that.current_step;
                 //var data = that.data;
-                var $element = $(step_data.selector);
+                var $element = $(step_data.selector).first();
                 var event = makeEventName(step_data.event);
 
                 $body.enjoyhint('show');
@@ -306,12 +323,22 @@ var EnjoyHint = function (_options) {
 
                         case 'custom':
                             
-                            on(step_data.event, function () {
-
-                                that.current_step++;
-                                console.log('step trigger:', that.current_step);
-                                off(step_data.event);
-                                that.stepAction();
+                            on(step_data.event, function (e, data) {
+                                step_data = that.data[that.current_step];
+                                if (data != undefined && data.constructor !== MouseEvent) { // if custom event has passed an instance of the action that was triggered at that time 
+                                    
+                                    if (step_data.event === data.event && step_data.selector === data.selector) {
+                                        that.current_step++;
+                                        console.log('step trigger:', that.current_step);
+                                        off(step_data.event);
+                                        that.stepAction();
+                                    }
+                                } else if (data != undefined && data.constructor === MouseEvent &&  $(step_data.selector)[0] === data.currentTarget) {
+                                    that.current_step++;
+                                    console.log('step trigger:', that.current_step);
+                                    off(step_data.event);
+                                    that.stepAction();
+                                } 
                             });
 
                             break;
@@ -323,9 +350,9 @@ var EnjoyHint = function (_options) {
                     }
 
                 } else {
-    
+                    $body.off('click.enjoyhint');
                     $event_element.on(event, function (e) {
-
+                        step_data = that.data[that.current_step];
                         if (step_data.keyCode && e.keyCode != step_data.keyCode) {
 
                             return;
@@ -333,11 +360,11 @@ var EnjoyHint = function (_options) {
 
                         if (this  === $(step_data.selector)[0]) {
                             that.current_step++;
+                            $(this).off(event);
+                            that.stepAction();
                         }
                         
-                        $(this).off(event);
-
-                        stepAction(); // clicked
+                         // clicked
                     });
                     
                     
@@ -366,39 +393,24 @@ var EnjoyHint = function (_options) {
     that.skipAll = function() {
 
         var step_data = that.data[that.current_step];
-        var $element = $(step_data.selector);
-
-        off(step_data.event);
-        $element.off(makeEventName(step_data.event));
-
+        if (step_data && step_data.selector) {
+            var $element = $(step_data.selector);
+            off(step_data.event);
+            $element.off(makeEventName(step_data.event));
+        }
         that.destroyEnjoy();
     };
 
-    var makeEventName = function (name, is_custom) {
-
-        return name + (is_custom ? 'custom' : '') + '.enjoy_hint';
-    };
-
-    var on = function (event_name, callback) {
-
-        $body.on(makeEventName(event_name, true), callback);
-    };
-
-    var off = function (event_name) {
-
-        $body.off(makeEventName(event_name, true));
-    };
+    
 
 
     /********************* PUBLIC METHODS ***************************************/
 
-    window.addEventListener('resize', function() {
-
+    window.addEventListener('resize.enjoyhint', function() {
         if ($event_element != null && $event_element.length) {
-
             $body.enjoyhint('redo_events_near_rect', $event_element[0].getBoundingClientRect());
         }
-    });
+    }.bind(that));
 
     that.stop = function() {
 
@@ -426,7 +438,11 @@ var EnjoyHint = function (_options) {
                         $body.enjoyhint('render_label_with_shape', shape_data, that.stop,progressPercentage);
                         //$body.enjoyhint('redo_events_near_rect', $event_element[0].getBoundingClientRect());
                     }
+                    
                 }
+            }
+            if ($(step_data.selector).offset().top > $(window).height()) {
+                $(step_data.selector)[0].scrollIntoView();
             }
         }
     }
