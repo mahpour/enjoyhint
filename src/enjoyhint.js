@@ -16,7 +16,7 @@ window.EnjoyHint = function (_options) {
 
         },
 
-        onSkip: function () {
+        onPular: function () {
 
         },
 
@@ -55,9 +55,9 @@ window.EnjoyHint = function (_options) {
                 that.nextStep();
             },
 
-            onSkipClick: function () {
+            onPularClick: function () {
 
-                that.options.onSkip();
+                that.options.onPular();
                 that.skipAll();
             }
         });
@@ -84,9 +84,9 @@ window.EnjoyHint = function (_options) {
         var $skipBtn = $('.enjoyhint_skip_btn');
 
         $nextBtn.removeClass(that.nextUserClass);
-        $nextBtn.text("Next");
+        $nextBtn.text("Próximo");
         $skipBtn.removeClass(that.skipUserClass);
-        $skipBtn.text("Skip");
+        $skipBtn.text("Pular");
     };
     var getShapeDatafromStepData = function (step_data) {
         var $element = $(step_data.selector);
@@ -271,7 +271,7 @@ window.EnjoyHint = function (_options) {
                     $body.enjoyhint('show_next');
                 }
 
-                if (step_data.showSkip == false) {
+                if (step_data.showPular == false) {
 
                     $body.enjoyhint('hide_skip');
                 } else {
@@ -279,7 +279,7 @@ window.EnjoyHint = function (_options) {
                     $body.enjoyhint('show_skip');
                 }
 
-                if (step_data.showSkip == true) {
+                if (step_data.showPular == true) {
 
                 }
 
@@ -288,7 +288,7 @@ window.EnjoyHint = function (_options) {
                     var $nextBtn = $('.enjoyhint_next_btn');
 
                     $nextBtn.addClass(step_data.nextButton.className || "");
-                    $nextBtn.text(step_data.nextButton.text || "Next");
+                    $nextBtn.text(step_data.nextButton.text || "Próximo");
                     that.nextUserClass = step_data.nextButton.className;
                 }
 
@@ -297,7 +297,7 @@ window.EnjoyHint = function (_options) {
                     var $skipBtn = $('.enjoyhint_skip_btn');
 
                     $skipBtn.addClass(step_data.skipButton.className || "");
-                    $skipBtn.text(step_data.skipButton.text || "Skip");
+                    $skipBtn.text(step_data.skipButton.text || "Pular");
                     that.skipUserClass = step_data.skipButton.className;
                 }
 
