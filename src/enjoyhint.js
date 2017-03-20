@@ -1,5 +1,5 @@
 window.enjoyhintcounter = 0;
-var EnjoyHint = function (_options) {
+window.EnjoyHint = function (_options) {
 
     var $event_element;
     var that = this;

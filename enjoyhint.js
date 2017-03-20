@@ -1,5 +1,5 @@
 window.enjoyhintcounter = 0;
-var EnjoyHint = function (_options) {
+window.EnjoyHint = function (_options) {
 
     var $event_element;
     var that = this;
@@ -523,7 +523,8 @@ var EnjoyHint = function (_options) {
     };
 
     init();
-};CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+}
+;CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
