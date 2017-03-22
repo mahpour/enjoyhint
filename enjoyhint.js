@@ -727,12 +727,12 @@ window.EnjoyHint = function (_options) {
                 $right_dis_events.click(stopPropagation);
 
 
-                that.$skip_btn = $('<div>', { 'class': that.cl.skip_btn }).appendTo(that.$contents_container).html('Skip').click(function (e) {
+                that.$skip_btn = $('<div>', { 'class': that.cl.skip_btn }).appendTo(that.$contents_container).html('Sair').click(function (e) {
 
                     that.hide();
                     that.options.onSkipClick();
                 });
-                that.$next_btn = $('<div>', { 'class': that.cl.next_btn }).appendTo(that.$contents_container).html('Next').click(function (e) {
+                that.$next_btn = $('<div>', { 'class': that.cl.next_btn }).appendTo(that.$contents_container).html('Próximo').click(function (e) {
 
                     that.options.onNextClick();
                 });
