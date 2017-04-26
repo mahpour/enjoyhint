@@ -1,5 +1,5 @@
 window.enjoyhintcounter = 0;
-var EnjoyHint = function (_options) {
+window.EnjoyHint = function (_options) {
 
     var $event_element;
     var that = this;
@@ -16,7 +16,7 @@ var EnjoyHint = function (_options) {
 
         },
 
-        onSkip: function () {
+        onPular: function () {
 
         },
 
@@ -55,9 +55,9 @@ var EnjoyHint = function (_options) {
                 that.nextStep();
             },
 
-            onSkipClick: function () {
+            onPularClick: function () {
 
-                that.options.onSkip();
+                that.options.onPular();
                 that.skipAll();
             }
         });
@@ -84,9 +84,9 @@ var EnjoyHint = function (_options) {
         var $skipBtn = $('.enjoyhint_skip_btn');
 
         $nextBtn.removeClass(that.nextUserClass);
-        $nextBtn.text("Next");
+        $nextBtn.text("Próximo");
         $skipBtn.removeClass(that.skipUserClass);
-        $skipBtn.text("Skip");
+        $skipBtn.text("Pular");
     };
     var getShapeDatafromStepData = function (step_data) {
         var $element = $(step_data.selector);
@@ -271,7 +271,7 @@ var EnjoyHint = function (_options) {
                     $body.enjoyhint('show_next');
                 }
 
-                if (step_data.showSkip == false) {
+                if (step_data.showPular == false) {
 
                     $body.enjoyhint('hide_skip');
                 } else {
@@ -279,7 +279,7 @@ var EnjoyHint = function (_options) {
                     $body.enjoyhint('show_skip');
                 }
 
-                if (step_data.showSkip == true) {
+                if (step_data.showPular == true) {
 
                 }
 
@@ -288,7 +288,7 @@ var EnjoyHint = function (_options) {
                     var $nextBtn = $('.enjoyhint_next_btn');
 
                     $nextBtn.addClass(step_data.nextButton.className || "");
-                    $nextBtn.text(step_data.nextButton.text || "Next");
+                    $nextBtn.text(step_data.nextButton.text || "Próximo");
                     that.nextUserClass = step_data.nextButton.className;
                 }
 
@@ -297,7 +297,7 @@ var EnjoyHint = function (_options) {
                     var $skipBtn = $('.enjoyhint_skip_btn');
 
                     $skipBtn.addClass(step_data.skipButton.className || "");
-                    $skipBtn.text(step_data.skipButton.text || "Skip");
+                    $skipBtn.text(step_data.skipButton.text || "Pular");
                     that.skipUserClass = step_data.skipButton.className;
                 }
 
@@ -523,7 +523,8 @@ var EnjoyHint = function (_options) {
     };
 
     init();
-};CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+}
+;CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
@@ -726,12 +727,12 @@ var EnjoyHint = function (_options) {
                 $right_dis_events.click(stopPropagation);
 
 
-                that.$skip_btn = $('<div>', { 'class': that.cl.skip_btn }).appendTo(that.$contents_container).html('Skip').click(function (e) {
+                that.$skip_btn = $('<div>', { 'class': that.cl.skip_btn }).appendTo(that.$contents_container).html('Sair').click(function (e) {
 
                     that.hide();
                     that.options.onSkipClick();
                 });
-                that.$next_btn = $('<div>', { 'class': that.cl.next_btn }).appendTo(that.$contents_container).html('Next').click(function (e) {
+                that.$next_btn = $('<div>', { 'class': that.cl.next_btn }).appendTo(that.$contents_container).html('Próximo').click(function (e) {
 
                     that.options.onNextClick();
                 });
